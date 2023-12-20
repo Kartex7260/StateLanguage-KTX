@@ -20,8 +20,10 @@ class KReflectionObjectConverter : BaseStateObjectConverter() {
 	override fun convert(args: MutableStateArguments, obj: Any) {
 		val type = obj::class
 		args.put(fullClassNameKey, type.qualifiedName)
-		val functions = getGetMethods(type)
+		if (isObject(type))
+			return
 
+		val functions = getGetMethods(type)
 		for (func in functions) {
 			val key = getArgumentKey(func)
 			val value = func.call(obj)
@@ -33,6 +35,9 @@ class KReflectionObjectConverter : BaseStateObjectConverter() {
 	override fun convert(args: StateArguments): Any {
 		val className = getClassName(args)
 		val type = Class.forName(className).kotlin
+		val obj = type.objectInstance
+		if (obj != null)
+			return obj
 		val constructor = getConstructor(type)
 		val values = mutableListOf<Any>()
 		for (parameter in constructor.parameters) {
@@ -41,8 +46,8 @@ class KReflectionObjectConverter : BaseStateObjectConverter() {
 			throw IllegalArgumentException("Not found parameter $key")
 			values.add(argument.value)
 		}
-		return constructor.call(*values.toTypedArray()) ?:
-		throw RuntimeException("Unexpected error when creating an instance")
+		return constructor.call(*values.toTypedArray())
+			?: throw RuntimeException("Unexpected error when creating an instance")
 	}
 
 	private fun getGetMethods(type: KClass<*>): List<KCallable<*>> {
@@ -92,5 +97,9 @@ class KReflectionObjectConverter : BaseStateObjectConverter() {
 		} ?: type.constructors.maxWithOrNull(
 			Comparator.comparingInt { it.parameters.size }
 		) ?: throw IllegalStateException("Not found relevant constructor")
+	}
+
+	private fun isObject(kClass: KClass<*>): Boolean {
+		return kClass.objectInstance != null
 	}
 }

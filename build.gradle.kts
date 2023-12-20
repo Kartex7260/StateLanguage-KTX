@@ -12,7 +12,7 @@ repositories {
 dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.21")
-    implementation(files("libs/kanti.sl.jar"))
+    implementation(files("lib/kanti.sl.jar"))
 }
 
 tasks.test {
