@@ -82,8 +82,8 @@ class KReflectionObjectConverter : BaseStateObjectConverter() {
 
 	private fun getArgumentKey(parameter: KParameter): String {
 		return parameter.findAnnotation<Argument>()?.name ?:
-		parameter.name ?:
-		throw IllegalStateException("Parameter not have ${Argument::class.qualifiedName} annotation");
+		parameter.name
+			?: throw IllegalStateException("Parameter not have ${Argument::class.qualifiedName} annotation")
 	}
 
 	private fun getClassName(args: StateArguments): String {
@@ -117,7 +117,7 @@ class KReflectionObjectConverter : BaseStateObjectConverter() {
 		}
 	}
 
-	fun splitByLastDot(line: String): Pair<String, String> {
+	private fun splitByLastDot(line: String): Pair<String, String> {
 		val lastDotIndex = line.indexOfLast { it == '.' }
 		if (lastDotIndex == -1)
 			return Pair(line, "")
