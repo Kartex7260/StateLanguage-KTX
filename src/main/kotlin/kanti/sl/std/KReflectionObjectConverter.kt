@@ -15,7 +15,6 @@ import kotlin.reflect.jvm.jvmErasure
 class KReflectionObjectConverter : BaseStateObjectConverter() {
 
 	private val fullClassNameKey = "fullClassName"
-	private val methodGetPrefix = "get"
 
 	override fun convert(args: MutableStateArguments, obj: Any) {
 		val type = obj::class
@@ -34,10 +33,12 @@ class KReflectionObjectConverter : BaseStateObjectConverter() {
 
 	override fun convert(args: StateArguments): Any {
 		val className = getClassName(args)
-		val type = Class.forName(className).kotlin
+		val type = loadClass(className)
+
 		val obj = type.objectInstance
 		if (obj != null)
 			return obj
+
 		val constructor = getConstructor(type)
 		val values = mutableListOf<Any>()
 		for (parameter in constructor.parameters) {
@@ -101,5 +102,28 @@ class KReflectionObjectConverter : BaseStateObjectConverter() {
 
 	private fun isObject(kClass: KClass<*>): Boolean {
 		return kClass.objectInstance != null
+	}
+
+	private fun loadClass(name: String): KClass<*> {
+		try {
+			return Class.forName(name).kotlin
+		} catch (ex: ClassNotFoundException) {
+			val classes = splitByLastDot(name)
+			val baseClass = Class.forName(classes.first).kotlin
+			return baseClass.sealedSubclasses.firstOrNull { it.simpleName == classes.second }
+				?: throw ex
+		} catch (th: Throwable) {
+			throw th
+		}
+	}
+
+	fun splitByLastDot(line: String): Pair<String, String> {
+		val lastDotIndex = line.indexOfLast { it == '.' }
+		if (lastDotIndex == -1)
+			return Pair(line, "")
+		return Pair(
+			first = line.substring(0, lastDotIndex),
+			second = line.substring(lastDotIndex + 1)
+		)
 	}
 }
